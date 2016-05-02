@@ -2,6 +2,7 @@ BabyWars 0.0.x
 
 系统需求（理论上）：
 Win xp sp3及以上（需安装vc++ 2015运行库）
+尼玛怎么没有linux的
 
 运行方法：
 双击运行BabyWarsDebug.bat即可。
