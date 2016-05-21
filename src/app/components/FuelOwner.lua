@@ -1,4 +1,15 @@
 
+--[[--------------------------------------------------------------------------------
+-- FuelOwner是ModelUnit可用的组件。只有绑定了本组件，ModelUnit才具有燃料属性。
+-- 主要职责：
+--   维护相关数值并提供必要接口给外界访问
+-- 使用场景举例：
+--   宿主初始化时，根据自身属性来绑定和初始化本组件（所有ModelUnit都需要绑定，但具体由GameConstant决定）
+--   收到“回合阶段-消耗燃料”的消息时，计算燃料消耗量，并在必要时（如bomber耗尽燃料）发送消息以摧毁宿主ModelUnit
+-- 其他：
+--   当前燃料量会影响单位的可移动距离，具体计算目前由ModelActionPlanner进行
+--]]--------------------------------------------------------------------------------
+
 local FuelOwner = class("FuelOwner")
 
 local TypeChecker        = require("app.utilities.TypeChecker")
@@ -22,13 +33,6 @@ local EXPORTED_METHODS = {
 --------------------------------------------------------------------------------
 local function isFuelAmount(param)
     return (param >= 0) and (math.ceil(param) == param)
-end
-
---------------------------------------------------------------------------------
--- The util functions.
---------------------------------------------------------------------------------
-local function isShortage(self)
-    return self:getCurrentFuel() / self:getMaxFuel() <= 1 / 3
 end
 
 --------------------------------------------------------------------------------
@@ -81,7 +85,7 @@ function FuelOwner:loadInstantialData(data)
 end
 
 function FuelOwner:setRootScriptEventDispatcher(dispatcher)
-    self:unsetRootScriptEventDispatcher()
+    assert(self.m_RootScriptEventDispatcher == nil, "FuelOwner:setRootScriptEventDispatcher() the dispatcher has been set.")
 
     self.m_RootScriptEventDispatcher = dispatcher
     dispatcher:addEventListener("EvtTurnPhaseConsumeUnitFuel", self)
@@ -90,13 +94,24 @@ function FuelOwner:setRootScriptEventDispatcher(dispatcher)
 end
 
 function FuelOwner:unsetRootScriptEventDispatcher()
-    if (self.m_RootScriptEventDispatcher) then
-        self.m_RootScriptEventDispatcher:removeEventListener("EvtTurnPhaseConsumeUnitFuel", self)
+    assert(self.m_RootScriptEventDispatcher, "FuelOwner:unsetRootScriptEventDispatcher() the dispatcher hasn't been set.")
 
-        self.m_RootScriptEventDispatcher = nil
-    end
+    self.m_RootScriptEventDispatcher:removeEventListener("EvtTurnPhaseConsumeUnitFuel", self)
+    self.m_RootScriptEventDispatcher = nil
 
     return self
+end
+
+--------------------------------------------------------------------------------
+-- The function for serialization.
+--------------------------------------------------------------------------------
+function FuelOwner:serialize(spaces)
+    local currentFuel = self:getCurrentFuel()
+    if (currentFuel ~= self:getMaxFuel()) then
+        return string.format("%sFuelOwner = {current = %d}", spaces or "", currentFuel)
+    else
+        return nil
+    end
 end
 
 --------------------------------------------------------------------------------

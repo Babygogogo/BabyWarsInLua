@@ -1,4 +1,15 @@
 
+--[[--------------------------------------------------------------------------------
+-- ModelUnit是战场上的一个作战单位。
+--
+-- 主要职责和使用场景举例：
+--   构造作战单位，维护相关数值，提供接口给外界访问
+--
+-- 其他：
+--   - ModelUnit中的许多概念都和ModelTile很相似，包括tiledID、instantialData、构造过程等，因此可以参照ModelTile的注释，这里不赘述。
+--     有点不同的是，ModelUnit只需一个tiledID即可构造，而ModelTile可能需要1-2个。
+--]]--------------------------------------------------------------------------------
+
 local ModelUnit = class("ModelUnit")
 
 local ComponentManager      = require("global.components.ComponentManager")
@@ -64,6 +75,39 @@ local function loadInstantialData(self, param)
 end
 
 --------------------------------------------------------------------------------
+-- The private functions for serialization.
+--------------------------------------------------------------------------------
+local function serializeTiledID(self, spaces)
+    return string.format("%stiledID = %d", spaces, self:getTiledID())
+end
+
+local function serializeUnitID(self, spaces)
+    return string.format("%sunitID = %d", spaces, self:getUnitId())
+end
+
+local function serializeState(self, spaces)
+    local state = self:getState()
+    if (state == "idle") then
+        return nil
+    else
+        return string.format("%sstate = %q", spaces, state)
+    end
+end
+
+local function serializeComponents(self, spaces)
+    local strList = {}
+    spaces = spaces or ""
+
+    for _, component in pairs(ComponentManager.getAllComponents(self)) do
+        if (component.serialize) then
+            strList[#strList + 1] = component:serialize(spaces)
+        end
+    end
+
+    return table.concat(strList, ",\n")
+end
+
+--------------------------------------------------------------------------------
 -- The constructor and initializers.
 --------------------------------------------------------------------------------
 function ModelUnit:ctor(param)
@@ -89,7 +133,7 @@ function ModelUnit:initView()
 end
 
 function ModelUnit:setRootScriptEventDispatcher(dispatcher)
-    self:unsetRootScriptEventDispatcher()
+    assert(self.m_RootScriptEventDispatcher == nil, "ModelUnit:setRootScriptEventDispatcher() the dispatcher has been set.")
     self.m_RootScriptEventDispatcher = dispatcher
     dispatcher:addEventListener("EvtTurnPhaseResetUnitState", self)
 
@@ -103,19 +147,35 @@ function ModelUnit:setRootScriptEventDispatcher(dispatcher)
 end
 
 function ModelUnit:unsetRootScriptEventDispatcher()
-    if (self.m_RootScriptEventDispatcher) then
-        self.m_RootScriptEventDispatcher:removeEventListener("EvtTurnPhaseResetUnitState", self)
+    assert(self.m_RootScriptEventDispatcher, "ModelUnit:unsetRootScriptEventDispatcher() the dispatcher hasn't been set.")
+    self.m_RootScriptEventDispatcher:removeEventListener("EvtTurnPhaseResetUnitState", self)
+    self.m_RootScriptEventDispatcher = nil
 
-        self.m_RootScriptEventDispatcher = nil
-
-        for _, component in pairs(ComponentManager.getAllComponents(self)) do
-            if (component.unsetRootScriptEventDispatcher) then
-                component:unsetRootScriptEventDispatcher()
-            end
+    for _, component in pairs(ComponentManager.getAllComponents(self)) do
+        if (component.unsetRootScriptEventDispatcher) then
+            component:unsetRootScriptEventDispatcher()
         end
     end
 
     return self
+end
+
+--------------------------------------------------------------------------------
+-- The function for serialization.
+--------------------------------------------------------------------------------
+function ModelUnit:serialize(spaces)
+    spaces = spaces or ""
+    local subSpaces = spaces .. "    "
+    local strState = serializeState(self, subSpaces)
+
+    return string.format("%s{\n%s,\n%s,\n%s%s,\n%s}",
+        spaces,
+        serializeTiledID(   self, subSpaces),
+        serializeUnitID(    self, subSpaces),
+        (strState) and (strState .. ",\n") or (""),
+        serializeComponents(self, subSpaces),
+        spaces
+    )
 end
 
 --------------------------------------------------------------------------------
@@ -179,10 +239,6 @@ function ModelUnit:showMovingAnimation()
     return self
 end
 
-function ModelUnit:isInStealthMode()
-    return false
-end
-
 function ModelUnit:getDescription()
     return self.m_Template.description
 end
@@ -203,6 +259,9 @@ function ModelUnit:canDoAction(playerIndex)
     return (self:getPlayerIndex() == playerIndex) and (self:getState() == "idle")
 end
 
+--------------------------------------------------------------------------------
+-- The public functions for doing actions.
+--------------------------------------------------------------------------------
 function ModelUnit:doActionWait(action)
     self:setStateActioned()
 
@@ -230,8 +289,8 @@ function ModelUnit:doActionAttack(action, isAttacker)
     end
 
     local rootScriptEventDispatcher = self.m_RootScriptEventDispatcher
-    local shouldDestroyAttacker = self:getCurrentHP() <= (action.counterDamage or 0)
-    local shouldDestroyTarget   = action.target:getCurrentHP() <= action.attackDamage
+    local shouldDestroyAttacker     = self:getCurrentHP() <= (action.counterDamage or 0)
+    local shouldDestroyTarget       = action.target:getCurrentHP() <= action.attackDamage
 
     for _, component in pairs(ComponentManager.getAllComponents(self)) do
         if (component.doActionAttack) then
@@ -252,12 +311,21 @@ function ModelUnit:doActionAttack(action, isAttacker)
 
             if (shouldDestroyAttacker) then
                 rootScriptEventDispatcher:dispatchEvent({name = "EvtDestroyViewUnit", gridIndex = self:getGridIndex()})
+            elseif ((action.counterDamage) and (not shouldDestroyTarget)) then
+                rootScriptEventDispatcher:dispatchEvent({name = "EvtAttackViewUnit", gridIndex = self:getGridIndex()})
             end
+
             if (shouldDestroyTarget) then
                 if (action.targetType == "unit") then
                     rootScriptEventDispatcher:dispatchEvent({name = "EvtDestroyViewUnit", gridIndex = action.targetGridIndex})
                 else
                     rootScriptEventDispatcher:dispatchEvent({name = "EvtDestroyViewTile", gridIndex = action.targetGridIndex})
+                end
+            else
+                if (action.targetType == "unit") then
+                    rootScriptEventDispatcher:dispatchEvent({name = "EvtAttackViewUnit", gridIndex = action.targetGridIndex})
+                else
+                    rootScriptEventDispatcher:dispatchEvent({name = "EvtAttackViewTile", gridIndex = action.targetGridIndex})
                 end
             end
         end)

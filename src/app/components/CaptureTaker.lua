@@ -1,4 +1,13 @@
 
+--[[--------------------------------------------------------------------------------
+-- CaptureTaker是ModelTile可用的组件。只有绑定了本组件，才能被可实施占领的对象（即绑定了CaptureDoer的ModelUnit）实施占领。
+-- 主要职责：
+--   维护有关占领的各种数值（目前只要维护当前占领点数），并提供必要接口给外界访问
+-- 使用场景举例：
+--   宿主初始化时，根据自身属性来绑定和初始化本组件（比如city需要绑定，plain不需要。具体需要与否，由GameConstant决定）
+--   占领点数降为0后，若满足占领即失败的条件（如HQ），则派发相应事件（未完成）。
+--]]--------------------------------------------------------------------------------
+
 local CaptureTaker = class("CaptureTaker")
 
 local TypeChecker        = require("app.utilities.TypeChecker")
@@ -47,16 +56,16 @@ function CaptureTaker:loadInstantialData(data)
     return self
 end
 
-function CaptureTaker:setRootScriptEventDispatcher(dispatcher)
-    self.m_RootScriptEventDispatcher = dispatcher
-
-    return self
-end
-
-function CaptureTaker:unsetRootScriptEventDispatcher()
-    self.m_RootScriptEventDispatcher = nil
-
-    return self
+--------------------------------------------------------------------------------
+-- The function for serialization.
+--------------------------------------------------------------------------------
+function CaptureTaker:serialize(spaces)
+    local currentCapturePoint = self:getCurrentCapturePoint()
+    if (currentCapturePoint == self:getMaxCapturePoint()) then
+        return nil
+    else
+        return string.format("%sCaptureTaker = {currentCapturePoint = %d}", spaces or "", currentCapturePoint)
+    end
 end
 
 --------------------------------------------------------------------------------

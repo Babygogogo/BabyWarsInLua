@@ -1,7 +1,23 @@
 
+--[[--------------------------------------------------------------------------------
+-- ModelPlayerManager是战局上的玩家管理器，负责维护玩家列表及在适当时候更新玩家数据。
+--
+-- 主要职责
+--   同上
+--
+-- 使用场景举例：
+--   - 在回合进入“获得收入”的阶段（即收到EvtTurnPhaseGetFund消息）时，更新相应的player属性。
+--   - 在回合进入“维修单位”的阶段（即收到EvtTurnPhaseRepairUnit消息）时，更新相应的unit和player的属性。
+--
+-- 其他：
+--  - 在本类中响应“维修单位”有点不合理，可以移动到别的地方处理
+--
+--  - 本类目前没有对应的view，因为暂时还不用显示。
+--]]--------------------------------------------------------------------------------
+
 local ModelPlayerManager = class("ModelPlayerManager")
 
-local Player      = require("app.models.ModelPlayer")
+local ModelPlayer = require("app.models.ModelPlayer")
 
 --------------------------------------------------------------------------------
 -- The util functions.
@@ -32,6 +48,15 @@ local function dispatchEvtModelPlayerUpdated(dispatcher, modelPlayer, playerInde
         modelPlayer = modelPlayer,
         playerIndex = playerIndex,
     })
+end
+
+local function serializePlayers(self, spaces)
+    local strList = {}
+    for _, modelPlayer in ipairs(self.m_Players) do
+        strList[#strList + 1] = modelPlayer:serialize(spaces)
+    end
+
+    return table.concat(strList, ",\n")
 end
 
 --------------------------------------------------------------------------------
@@ -77,29 +102,30 @@ local function onEvtTurnPhaseRepairUnit(self, event)
 end
 
 --------------------------------------------------------------------------------
--- The constructor.
+-- The constructor and initializers.
 --------------------------------------------------------------------------------
 function ModelPlayerManager:ctor(param)
     self.m_Players = {}
     for i, player in ipairs(param) do
-        self.m_Players[i] = Player:create(player)
+        self.m_Players[i] = ModelPlayer:create(player)
     end
 
     return self
 end
 
---------------------------------------------------------------------------------
--- The callback functions on node/script events.
---------------------------------------------------------------------------------
-function ModelPlayerManager:onEnter(rootActor)
-    self.m_RootScriptEventDispatcher = rootActor:getModel():getScriptEventDispatcher()
-    self.m_RootScriptEventDispatcher:addEventListener("EvtTurnPhaseGetFund", self)
+function ModelPlayerManager:setRootScriptEventDispatcher(dispatcher)
+    assert(self.m_RootScriptEventDispatcher == nil, "ModelPlayerManager:setRootScriptEventDispatcher() the dispatcher has been set.")
+
+    self.m_RootScriptEventDispatcher = dispatcher
+    dispatcher:addEventListener("EvtTurnPhaseGetFund", self)
         :addEventListener("EvtTurnPhaseRepairUnit", self)
 
     return self
 end
 
-function ModelPlayerManager:onCleanup(rootActor)
+function ModelPlayerManager:unsetRootScriptEventDispatcher()
+    assert(self.m_RootScriptEventDispatcher, "ModelPlayerManager:unsetRootScriptEventDispatcher() the dispatcher hasn't been set.")
+
     self.m_RootScriptEventDispatcher:removeEventListener("EvtTurnPhaseRepairUnit", self)
         :removeEventListener("EvtTurnPhaseGetFund", self)
     self.m_RootScriptEventDispatcher = nil
@@ -107,6 +133,9 @@ function ModelPlayerManager:onCleanup(rootActor)
     return self
 end
 
+--------------------------------------------------------------------------------
+-- The callback functions on script events.
+--------------------------------------------------------------------------------
 function ModelPlayerManager:onEvent(event)
     local eventName = event.name
     if (eventName == "EvtTurnPhaseGetFund") then
@@ -129,6 +158,20 @@ function ModelPlayerManager:getPlayersCount()
     return #self.m_Players
 end
 
+function ModelPlayerManager:serialize(spaces)
+    spaces = spaces or ""
+    local subSpaces = spaces .. "    "
+
+    return string.format("%splayers = {\n%s\n%s}",
+        spaces,
+        serializePlayers(self, subSpaces),
+        spaces
+    )
+end
+
+--------------------------------------------------------------------------------
+-- The public functions for doing actions.
+--------------------------------------------------------------------------------
 function ModelPlayerManager:doActionProduceOnTile(action)
     local playerIndex = action.playerIndex
     local modelPlayer = self:getModelPlayer(action.playerIndex)

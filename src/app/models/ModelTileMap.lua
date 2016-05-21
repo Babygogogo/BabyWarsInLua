@@ -1,9 +1,37 @@
 
+--[[--------------------------------------------------------------------------------
+-- ModelTileMap是战场上的地形地图，实质上就是ModelTile组成的矩阵。
+--
+-- 主要职责和使用场景举例：
+--   构造地形地图，维护相关数值，提供接口给外界访问
+--
+-- 其他：
+--   - 如何用数据文件完全描述一个ModelTileMap
+--     最直接的做法，就是详细描述地图上每一个tile的数据。使用该文件重建ModelTileMap时，只需用这些数据分别重建每一个tile，再合成矩阵就可以了。
+--     但，考虑到ModelTileMap一般都有上百个tile，如果采取这种做法的话，数据文件就会很大。
+--
+--     再考虑到tile的特性：很多tile是没有“非模板”的状态的（参考ModelTile的注释），因此多数情况下，用tiledID，配合GameConstant中的模板，就可以完全描述一个tile了。
+--     那么，只要有一个由tiledID组成的矩阵（严格来说是分了两层的矩阵），配合模板，我们就能重建一个“满血满状态”的ModelTileMap。而tiledID矩阵，正是Tiled软件所生成的数据。
+--     最后，要如何描述被打到残血的meteor，或被占领了一半的city呢？模板无法描述这些数据，因此我们需要用到类似instantialData的数据来描述它们。
+--
+--     综上，描述ModelTileMap的数据文件可以分为两个部分：一个是模板地图的名字，一个是instantialData（参考res/data/tileMap/TileMap_Overwrite1.lua）。
+--
+--   - 使用数据文件重建ModelTileMap的步骤：
+--     1. 通过文件中的模板地图的名字，找到模板地图数据文件（该文件由Tiled软件生成，在客户端和服务端上都要有，以免无谓的数据传输），并用该文件重建满血满状态的地图
+--     2. 使用instantialData，更新对应的tile的数据
+--
+--   - 递归的数据文件
+--     如果仔细考虑，可以想到，数据文件可以通过模板地图进行递归构造（也就是说，模板地图里引用了另一个模板地图）
+--     递归构造不能说完全没用，但它会导致理解上的麻烦以及某些其他问题（如A地图引用了B地图，那么A地图的作者是不是也要加上B地图作者的名字），因此我决定禁用这种构造。
+--
+--   - 创建新战局时，程序需要创建相应的数据文件。由于战局都是建立在模板地图之上的，所以这个数据文件将引用该模板地图，同时附带一个空的instantialData（在ModelTileMap还没被玩家所改变的情况下）。
+--     若玩家的操作改变了ModelTileMap上的某些属性（比如占领，攻击meteor，发射导弹），那么相应的数据就记在instantialData中即可。
+--]]--------------------------------------------------------------------------------
+
 local ModelTileMap = class("ModelTileMap")
 
 local Actor              = require("global.actors.Actor")
 local TypeChecker        = require("app.utilities.TypeChecker")
-local MapFunctions       = require("app.utilities.MapFunctions")
 local GridIndexFunctions = require("app.utilities.GridIndexFunctions")
 
 --------------------------------------------------------------------------------
@@ -12,7 +40,7 @@ local GridIndexFunctions = require("app.utilities.GridIndexFunctions")
 local function requireMapData(param)
     local t = type(param)
     if (t == "string") then
-        return require("data.tileMap." .. param)
+        return require("data.templateWarField." .. param)
     elseif (t == "table") then
         return param
     else
@@ -43,18 +71,6 @@ local function createEmptyMap(width)
     return map
 end
 
-local function iterateAllActorTiles(tileMap, mapSize, func)
-    local width, height = mapSize.width, mapSize.height
-    for x = 1, width do
-        for y = 1, height do
-            local actorTile = tileMap[x][y]
-            if (actorTile) then
-                func(actorTile)
-            end
-        end
-    end
-end
-
 local function createTileActorsMapWithTiledLayers(objectLayer, baseLayer)
     local width, height = baseLayer.width, baseLayer.height
     local map = createEmptyMap(width)
@@ -83,12 +99,33 @@ local function updateTileActorsMapWithGridsData(map, mapSize, gridsData)
     end
 end
 
+local function serializeTemplateName(self, spaces)
+    return string.format("%stemplate = %q", spaces or "", self.m_TemplateName)
+end
+
+local function serializeModelTiles(self, spaces)
+    spaces = spaces or ""
+    local subSpaces = spaces .. "    "
+    local strList = {}
+
+    self:forEachModelTile(function(modelTile)
+        strList[#strList + 1] = modelTile:serialize(subSpaces)
+    end)
+
+    return string.format("%sgrids = {\n%s\n%s}",
+        spaces,
+        table.concat(strList, ",\n"),
+        spaces
+    )
+end
+
 --------------------------------------------------------------------------------
 -- The callback functions on script events.
 --------------------------------------------------------------------------------
 local function onEvtPlayerMovedCursor(self, event)
     local modelTile = self:getModelTile(event.gridIndex)
-    assert(modelTile, "ModelTileMap:onEvent() failed to get the tile model with event.gridIndex.")
+    assert(modelTile, "ModelTileMap-onEvtPlayerMovedCursor() failed to get the tile model with event.gridIndex.")
+
     self.m_RootScriptEventDispatcher:dispatchEvent({name = "EvtPlayerTouchTile", modelTile = modelTile})
 end
 
@@ -108,7 +145,7 @@ local function createTileActorsMapWithTemplate(mapData)
     local map, mapSize = createTileActorsMapWithTiledLayers(getTiledTileObjectLayer(templateMapData), getTiledTileBaseLayer(templateMapData))
     updateTileActorsMapWithGridsData(map, mapSize, mapData.grids or {})
 
-    return map, mapSize
+    return map, mapSize, mapData.template
 end
 
 local function createTileActorsMapWithoutTemplate(mapData)
@@ -120,20 +157,26 @@ end
 
 local function createTileActorsMap(param)
     local mapData = requireMapData(param)
+    -- The data for a tile map that contains no template is too large, so it's forbidden.
+    assert(mapData.template, "ModelTileMap-createTileActorsMap() the param contains no template.")
+    return createTileActorsMapWithTemplate(mapData)
+--[[
     if (mapData.template) then
         return createTileActorsMapWithTemplate(mapData)
     else
         return createTileActorsMapWithoutTemplate(mapData)
     end
+--]]
 end
 
-local function initWithTileActorsMap(self, map, mapSize)
+local function initWithTileActorsMap(self, map, mapSize, templateName)
     self.m_ActorTilesMap = map
     self.m_MapSize       = mapSize
+    self.m_TemplateName  = templateName
 end
 
 --------------------------------------------------------------------------------
--- The constructor.
+-- The constructor and initializers.
 --------------------------------------------------------------------------------
 function ModelTileMap:ctor(param)
     initWithTileActorsMap(self, createTileActorsMap(param))
@@ -160,40 +203,56 @@ function ModelTileMap:initView()
     return self
 end
 
---------------------------------------------------------------------------------
--- The callback functions on node/script events.
---------------------------------------------------------------------------------
-function ModelTileMap:onEnter(rootActor)
-    local dispatcher = rootActor:getModel():getScriptEventDispatcher()
+function ModelTileMap:setRootScriptEventDispatcher(dispatcher)
+    assert(self.m_RootScriptEventDispatcher == nil, "ModelTileMap:setRootScriptEventDispatcher() the dispatcher has been set.")
+
     self.m_RootScriptEventDispatcher = dispatcher
     dispatcher:addEventListener("EvtDestroyModelTile", self)
         :addEventListener("EvtDestroyViewTile",    self)
         :addEventListener("EvtPlayerMovedCursor",  self)
         :addEventListener("EvtPlayerSelectedGrid", self)
-        :addEventListener("EvtTurnPhaseBeginning", self)
 
-    iterateAllActorTiles(self.m_ActorTilesMap, self.m_MapSize, function(actorTile)
-        actorTile:getModel():setRootScriptEventDispatcher(dispatcher)
+    self:forEachModelTile(function(modelTile)
+        modelTile:setRootScriptEventDispatcher(dispatcher)
     end)
 
     return self
 end
 
-function ModelTileMap:onCleanup(rootActor)
-    self.m_RootScriptEventDispatcher:removeEventListener("EvtTurnPhaseBeginning", self)
-        :removeEventListener("EvtPlayerSelectedGrid", self)
+function ModelTileMap:unsetRootScriptEventDispatcher()
+    assert(self.m_RootScriptEventDispatcher, "ModelTileMap:unsetRootScriptEventDispatcher() the dispatcher hasn't been set.")
+
+    self.m_RootScriptEventDispatcher:removeEventListener("EvtPlayerSelectedGrid", self)
         :removeEventListener("EvtPlayerMovedCursor",  self)
         :removeEventListener("EvtDestroyViewTile",    self)
         :removeEventListener("EvtDestroyModelTile",   self)
     self.m_RootScriptEventDispatcher = nil
 
-    iterateAllActorTiles(self.m_ActorTilesMap, self.m_MapSize, function(actorTile)
-        actorTile:getModel():unsetRootScriptEventDispatcher()
+    self:forEachModelTile(function(modelTile)
+        modelTile:unsetRootScriptEventDispatcher()
     end)
 
     return self
 end
 
+--------------------------------------------------------------------------------
+-- The function for serialization.
+--------------------------------------------------------------------------------
+function ModelTileMap:serialize(spaces)
+    spaces = spaces or ""
+    local subSpaces = spaces .. "    "
+
+    return string.format("%stileMap = {\n%s,\n%s,\n%s}",
+        spaces,
+        serializeTemplateName(self, subSpaces),
+        serializeModelTiles(  self, subSpaces),
+        spaces
+    )
+end
+
+--------------------------------------------------------------------------------
+-- The callback functions on script events.
+--------------------------------------------------------------------------------
 function ModelTileMap:onEvent(event)
     local eventName = event.name
     if ((eventName == "EvtPlayerMovedCursor") or

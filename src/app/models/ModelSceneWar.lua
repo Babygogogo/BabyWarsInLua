@@ -1,4 +1,31 @@
 
+--[[--------------------------------------------------------------------------------
+-- ModelSceneWar是战局场景，同时也是游戏中最重要的场景。
+--
+-- 主要职责和使用场景举例：
+--   维护战局中的所有信息
+--
+-- 其他：
+--  - ModelSceneWar功能很多，因此分成多个不同的子actor来共同工作。目前这些子actor包括：
+--    - SceneWarHUD
+--    - WarField
+--    - PlayerManager
+--    - TurnManager
+--    - WeatherManager
+--
+--  - ModelSceneWar要正确处理服务器传来的事件消息。目前，是使用doActionXXX系列函数来处理的。
+--    由于ModelSceneWar本身是由许多子actor组成，所以这些系列函数通常只是把服务器事件分发给合适的子actor再行处理。
+--
+--  - model和view的“时间差”
+--    在目前的设计中，一旦收到事件，model将即时完成所有相关计算，而view将随后跨帧显示相应效果。
+--    考虑服务器传来“某unit A按某路线移动后对unit B发起攻击”的事件的情况。这种情况下，在model中，unit的新的数值将马上完成结算（如hp，弹药量，消灭与否，等级等都会有更新），
+--    但在view不可能立刻按model的新状态进行呈现（否则，玩家就会看到unit发生了瞬移，或是突然消失了），而必须跨帧逐步更新。
+--    采取model先行结算的方式可以避免很多问题，所以后续开发应该遵守同样的规范。
+--
+--  - 目前，ModelSceneWar还简单地模拟把玩家操作（也就是EvtPlayerRequestDoAction）传送到服务器，再接收服务器传回的操作（EvtSystemRequestDoAction）的过程（参见ActionTranslator）。
+--    这本不应该是ModelSceneWar的工作，等以后实现了网络模块，就应该把相关代码移除。
+--]]--------------------------------------------------------------------------------
+
 local ModelSceneWar = class("ModelSceneWar")
 
 local isServer = true
@@ -6,29 +33,18 @@ local isServer = true
 local Actor            = require("global.actors.Actor")
 local TypeChecker      = require("app.utilities.TypeChecker")
 local ActionTranslator = require("app.utilities.ActionTranslator")
-local ActionExecutor   = require("app.utilities.ActionExecutor")
 
 --------------------------------------------------------------------------------
 -- The util functions.
 --------------------------------------------------------------------------------
-local function createNodeEventHandler(model, rootActor)
-    return function(event)
-        if (event == "enter") then
-            model:onEnter(rootActor)
-        elseif (event == "enterTransitionFinish") then
-            model:onEnterTransitionFinish(rootActor)
-        elseif (event == "cleanup") then
-            model:onCleanup(rootActor)
-        end
-    end
-end
-
 local function requireSceneData(param)
     local t = type(param)
     if (t == "table") then
         return param
     elseif (t == "string") then
-        return require("res.data.warScene." .. param)
+        local dataName = "res.data.warScene." .. param
+        package.loaded[dataName] = nil
+        return require(dataName)
     else
         error("ModelSceneWar-requireSceneData() the param is invalid.")
     end
@@ -61,7 +77,7 @@ local function doActionProduceOnTile(self, action)
 end
 
 --------------------------------------------------------------------------------
--- The functions on EvtPlayerRequestDoAction/EvtSystemRequestDoAction.
+-- The private callback functions on script events.
 --------------------------------------------------------------------------------
 local function onEvtSystemRequestDoAction(self, event)
     local actionName = event.actionName
@@ -78,6 +94,13 @@ local function onEvtSystemRequestDoAction(self, event)
     else
         print("ModelSceneWar-onEvtSystemRequestDoAction() unrecognized action.")
     end
+
+---[[ -- These codes are for testing the serialize() and should be modified to do the real job.
+    local testFile = io.open(self.m_FileName, "w")
+    testFile:write(self:serialize())
+    testFile:close()
+--]]
+
 end
 
 local function onEvtPlayerRequestDoAction(self, event)
@@ -104,8 +127,10 @@ local function createScriptEventDispatcher()
     return require("global.events.EventDispatcher"):create()
 end
 
-local function initWithScriptEventDispatcher(model, dispatcher)
-    model.m_ScriptEventDispatcher = dispatcher
+local function initWithScriptEventDispatcher(self, dispatcher)
+    dispatcher:addEventListener("EvtPlayerRequestDoAction", self)
+        :addEventListener("EvtSystemRequestDoAction", self)
+    self.m_ScriptEventDispatcher = dispatcher
 end
 
 --------------------------------------------------------------------------------
@@ -116,6 +141,7 @@ local function createActorWarField(warFieldData)
 end
 
 local function initWithActorWarField(self, actor)
+    actor:getModel():setRootScriptEventDispatcher(self.m_ScriptEventDispatcher)
     self.m_ActorWarField = actor
 end
 
@@ -123,11 +149,12 @@ end
 -- The composition HUD actor.
 --------------------------------------------------------------------------------
 local function createActorSceneWarHUD()
-    return Actor.createWithModelAndViewName("ModelSceneWarHUD", nil, "ViewSceneWarHUD")
+    return Actor.createWithModelAndViewName("ModelWarHUD", nil, "ViewWarHUD")
 end
 
-local function initWithActorSceneWarHUD(self, actor)
-    self.m_ActorSceneWarHUD = actor
+local function initWithActorWarHud(self, actor)
+    actor:getModel():setRootScriptEventDispatcher(self.m_ScriptEventDispatcher)
+    self.m_ActorWarHud = actor
 end
 
 --------------------------------------------------------------------------------
@@ -138,6 +165,7 @@ local function createActorPlayerManager(playersData)
 end
 
 local function initWithActorPlayerManager(self, actor)
+    actor:getModel():setRootScriptEventDispatcher(self.m_ScriptEventDispatcher)
     self.m_ActorPlayerManager = actor
 end
 
@@ -150,8 +178,8 @@ end
 
 local function initWithActorTurnManager(self, actor)
     actor:getModel():setModelPlayerManager(self:getModelPlayerManager())
-        :setScriptEventDispatcher(self.m_ScriptEventDispatcher)
         :setModelWarField(self.m_ActorWarField:getModel())
+        :setRootScriptEventDispatcher(self.m_ScriptEventDispatcher)
     self.m_ActorTurnManager = actor
 end
 
@@ -170,12 +198,13 @@ end
 -- The constructor.
 --------------------------------------------------------------------------------
 function ModelSceneWar:ctor(param)
-    assert(param, "ModelSceneWar:ctor() tempting to initialize the instance with no param.")
-    local sceneData = requireSceneData(param)
+    assert(type(param) == "string", "ModelSceneWar:ctor() the param is invalid.")
+    self.m_FileName = "res/data/warScene/" .. param .. ".lua"
 
+    local sceneData = requireSceneData(param)
     initWithScriptEventDispatcher(self, createScriptEventDispatcher())
     initWithActorWarField(        self, createActorWarField(sceneData.warField))
-    initWithActorSceneWarHUD(     self, createActorSceneWarHUD())
+    initWithActorWarHud(          self, createActorSceneWarHUD())
     initWithActorPlayerManager(   self, createActorPlayerManager(sceneData.players))
     initWithActorTurnManager(     self, createActorTurnManager(sceneData.turn))
     initWithActorWeatherManager(  self, createActorWeatherManager(sceneData.weather))
@@ -191,55 +220,54 @@ function ModelSceneWar:initView()
     local view = self.m_View
     assert(view, "ModelSceneWar:initView() no view is attached.")
 
-    view:setWarFieldView(self.m_ActorWarField:getView())
-        :setSceneHudView(self.m_ActorSceneWarHUD:getView())
-
-        :registerScriptHandler(createNodeEventHandler(self, self.m_Actor))
+    view:setViewWarField(self.m_ActorWarField:getView())
+        :setViewWarHud(self.m_ActorWarHud:getView())
 
     return self
 end
 
 --------------------------------------------------------------------------------
--- The callback functions on node events.
+-- The function for serialization.
 --------------------------------------------------------------------------------
-function ModelSceneWar:onEnter(rootActor)
-    print("ModelSceneWar:onEnter()")
+function ModelSceneWar:serialize(spaces)
+    spaces = spaces or ""
+    local subSpaces = spaces .. "    "
 
-    self.m_ScriptEventDispatcher:addEventListener("EvtPlayerRequestDoAction", self)
-        :addEventListener("EvtSystemRequestDoAction", self)
-
-    self.m_ActorSceneWarHUD:onEnter(rootActor)
-    self.m_ActorWarField:onEnter(rootActor)
-    self.m_ActorPlayerManager:onEnter(rootActor)
-
-    self.m_ScriptEventDispatcher:dispatchEvent({name = "EvtWeatherChanged", weather = self:getModelWeatherManager():getCurrentWeather()})
-
-    return self
+    return string.format("%sreturn {\n%s,\n\n%s,\n\n%s,\n\n%s,\n%s}",
+        spaces,
+        self:getModelWarField()      :serialize(subSpaces),
+        self:getModelTurnManager()   :serialize(subSpaces),
+        self:getModelPlayerManager() :serialize(subSpaces),
+        self:getModelWeatherManager():serialize(subSpaces),
+        spaces
+    )
 end
 
-function ModelSceneWar:onEnterTransitionFinish(rootActor)
+--------------------------------------------------------------------------------
+-- The callback functions on start/stop running and script events.
+--------------------------------------------------------------------------------
+function ModelSceneWar:onStartRunning()
+    self.m_ScriptEventDispatcher:dispatchEvent({
+            name = "EvtModelWeatherUpdated",
+            modelWeather = self:getModelWeatherManager():getCurrentWeather()
+        })
+        :dispatchEvent({
+            name = "EvtSceneWarStarted",
+        })
     self:getModelTurnManager():runTurn()
 
     return self
 end
 
-function ModelSceneWar:onCleanup(rootActor)
-    print("ModelSceneWar:onCleanup()")
-
-    self.m_ScriptEventDispatcher:removeEventListener("EvtSystemRequestDoAction", self)
-        :removeEventListener("EvtPlayerRequestDoAction", self)
-
-    self.m_ActorPlayerManager:onCleanup(rootActor)
-    self.m_ActorWarField:onCleanup(rootActor)
-    self.m_ActorSceneWarHUD:onCleanup(rootActor)
-
+function ModelSceneWar:onStopRunning()
     return self
 end
 
 function ModelSceneWar:onEvent(event)
-    if (event.name == "EvtPlayerRequestDoAction") then
+    local eventName = event.name
+    if (eventName == "EvtPlayerRequestDoAction") then
         onEvtPlayerRequestDoAction(self, event)
-    elseif (event.name == "EvtSystemRequestDoAction") then
+    elseif (eventName == "EvtSystemRequestDoAction") then
         onEvtSystemRequestDoAction(self, event)
     end
 

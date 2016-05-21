@@ -1,4 +1,29 @@
 
+--[[--------------------------------------------------------------------------------
+-- ModelMapCursor是战局上的光标，同时也负责解读玩家的触摸操作，并翻译为游戏内使用的event。
+--
+-- 主要职责及使用场景举例：
+--   玩家触摸地图时，判断触摸的具体类型，并发送对应的event。
+--   在适当的时候切换光标的显示形态。
+--
+-- 其他：
+--   - 游戏的输入响应机制
+--     游戏中有两类物体可以响应玩家的输入，一种是本类ModelMapCursor，另一种是各个UI菜单按钮等。
+--     UI响应触摸优先于光标响应触摸，具体如何响应由相应的model和view自行处理。
+--     其他的所有物体都不会直接响应玩家输入，包括各unit/tile等。它们只响应由ModelMapCursor发出的事件。
+--     这种机制使得一旦输入响应异常，我们就可以直接来本类找问题，不用整个代码库去debug。而且事实证明，本类的代码也不长。
+--
+--   - 光标如何解读玩家的触摸操作
+--     - 触摸点数量达到2个或以上
+--       发送EvtPlayerZoomFieldWithTouches，光标本身不移动
+--     - 触摸点只有1个
+--       - 如果触摸没有移动过，那么把光标移动到相应位置，发送事件EvtPlayerSelectedGrid
+--       - 如果触摸有移动过
+--         - 如果触摸是在光标外的，发送事件EvtPlayerDragField，光标本身不移动。
+--         - 如果触摸是在光标内的，发送事件EvtPlayerMovedCursor，光标跟着触摸移动。
+--     实际实现请看代码。
+--]]--------------------------------------------------------------------------------
+
 local ModelMapCursor = class("ModelMapCursor")
 
 local GridIndexFunctions = require("app.utilities.GridIndexFunctions")
@@ -26,7 +51,7 @@ local function dispatchEventPlayerSelectedGrid(self, gridIndex)
 end
 
 --------------------------------------------------------------------------------
--- The callback functions on EvtPlayerPreviewAttackTarget/EvtPlayerPreviewNoAttackTarget.
+-- The private callback functions on script events.
 --------------------------------------------------------------------------------
 local function onEvtPlayerPreviewAttackTarget(self, event)
     if (self.m_View) then
@@ -42,15 +67,20 @@ local function onEvtPlayerPreviewNoAttackTarget(self, event)
     end
 end
 
+local function onEvtSceneWarStarted(self, event)
+    dispatchEventPlayerMovedCursor(self, self:getGridIndex())
+end
+
 --------------------------------------------------------------------------------
 -- The touch/scroll event listeners.
 --------------------------------------------------------------------------------
 local function createTouchListener(self)
-    local isTouchMoved, isTouchingCursor
+    local isTouchBegan, isTouchMoved, isTouchingCursor
     local initialTouchPosition, initialTouchGridIndex
     local touchListener = cc.EventListenerTouchAllAtOnce:create()
 
     local function onTouchesBegan(touches, event)
+        isTouchBegan = true
         isTouchMoved = false
         initialTouchPosition = touches[1]:getLocation()
         initialTouchGridIndex = GridIndexFunctions.worldPosToGridIndexInNode(initialTouchPosition, self.m_View)
@@ -58,6 +88,10 @@ local function createTouchListener(self)
     end
 
     local function onTouchesMoved(touches, event)
+        if (not isTouchBegan) then --Sometimes this function is invoked without the onTouchesBegan() being invoked first, so we must do the manual check here.
+            return
+        end
+
         local touchesCount = #touches
         isTouchMoved = (isTouchMoved) or
             (touchesCount > 1) or
@@ -92,6 +126,10 @@ local function createTouchListener(self)
     end
 
     local function onTouchesEnded(touches, event)
+        if (not isTouchBegan) then --Sometimes this function is invoked without the onTouchesBegan() being invoked first, so we must do the manual check here.
+            return
+        end
+
         local gridIndex = GridIndexFunctions.worldPosToGridIndexInNode(touches[1]:getLocation(), self.m_View)
         if (GridIndexFunctions.isWithinMap(gridIndex, self.m_MapSize)) then
             if (not isTouchMoved) then
@@ -161,23 +199,25 @@ function ModelMapCursor:setMapSize(size)
     return self
 end
 
---------------------------------------------------------------------------------
--- The callback functions on node/script events.
---------------------------------------------------------------------------------
-function ModelMapCursor:onEnter(rootActor)
-    self.m_RootScriptEventDispatcher = rootActor:getModel():getScriptEventDispatcher()
-    self.m_RootScriptEventDispatcher:dispatchEvent({name = "EvtPlayerMovedCursor", gridIndex = self:getGridIndex()})
-        :addEventListener("EvtPlayerPreviewAttackTarget",   self)
+function ModelMapCursor:setRootScriptEventDispatcher(dispatcher)
+    assert(self.m_RootScriptEventDispatcher == nil, "ModelMapCursor:setRootScriptEventDispatcher() the dispatcher has been set.")
+
+    self.m_RootScriptEventDispatcher = dispatcher
+    dispatcher:addEventListener("EvtPlayerPreviewAttackTarget", self)
         :addEventListener("EvtPlayerPreviewNoAttackTarget", self)
         :addEventListener("EvtActionPlannerIdle",           self)
         :addEventListener("EvtActionPlannerMakingMovePath", self)
         :addEventListener("EvtActionPlannerChoosingAction", self)
+        :addEventListener("EvtSceneWarStarted",             self)
 
     return self
 end
 
-function ModelMapCursor:onCleanup(rootActor)
-    self.m_RootScriptEventDispatcher:removeEventListener("EvtActionPlannerChoosingAction", self)
+function ModelMapCursor:unsetRootScriptEventDispatcher()
+    assert(self.m_RootScriptEventDispatcher, "ModelMapCursor:unsetRootScriptEventDispatcher() the dispatcher hasn't been set.")
+
+    self.m_RootScriptEventDispatcher:removeEventListener("EvtSceneWarStarted", self)
+        :removeEventListener("EvtActionPlannerChoosingAction", self)
         :removeEventListener("EvtActionPlannerMakingMovePath", self)
         :removeEventListener("EvtActionPlannerIdle",           self)
         :removeEventListener("EvtPlayerPreviewNoAttackTarget", self)
@@ -187,6 +227,9 @@ function ModelMapCursor:onCleanup(rootActor)
     return self
 end
 
+--------------------------------------------------------------------------------
+-- The callback functions on script events.
+--------------------------------------------------------------------------------
 function ModelMapCursor:onEvent(event)
     local eventName = event.name
     if ((eventName == "EvtActionPlannerIdle") or
@@ -196,6 +239,8 @@ function ModelMapCursor:onEvent(event)
         onEvtPlayerPreviewNoAttackTarget(self, event)
     elseif (eventName == "EvtPlayerPreviewAttackTarget") then
         onEvtPlayerPreviewAttackTarget(self, event)
+    elseif (eventName == "EvtSceneWarStarted") then
+        onEvtSceneWarStarted(self, event)
     end
 
     return self
