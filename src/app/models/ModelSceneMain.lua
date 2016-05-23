@@ -19,35 +19,15 @@ local Actor	                = require("global.actors.Actor")
 local GameConstantFunctions = require("app.utilities.GameConstantFunctions")
 
 --------------------------------------------------------------------------------
--- The composition confirm box actor.
---------------------------------------------------------------------------------
-local function createActorConfirmBox()
-    return Actor.createWithModelAndViewName("ModelConfirmBox", nil, "ViewConfirmBox")
-end
-
-local function initWithActorConfirmBox(self, actor)
-    actor:getModel():setEnabled(false)
-    self.m_ActorConfirmBox = actor
-end
-
---------------------------------------------------------------------------------
--- The composition war list actor.
---------------------------------------------------------------------------------
-local function createActorWarList(mapListData)
-    return Actor.createWithModelAndViewName("ModelWarList", mapListData, "ViewWarList", mapListData)
-end
-
-local function initWithActorWarList(self, actor)
-    actor:getModel():setModelConfirmBox(self.m_ActorConfirmBox:getModel())
-    self.m_ActorWarList = actor
-end
-
---------------------------------------------------------------------------------
 -- The constructor and initializers.
 --------------------------------------------------------------------------------
 function ModelSceneMain:ctor(param)
-    initWithActorConfirmBox(self, createActorConfirmBox())
-    initWithActorWarList(   self, createActorWarList("WarSceneList"))
+	print('参数类型'..type(param))
+	self.m_ActorConfirmBox = Actor.createWithModelAndViewName("ModelConfirmBox", nil, "ViewConfirmBox")
+	self.m_ActorConfirmBox:getModel():setEnabled(false)
+
+	--self.m_ActorWarList = Actor.createWithModelAndViewName("ModelWarList", mapListData, "ViewWarList", mapListData)
+	--self.m_ActorWarList:getModel():setModelConfirmBox(self.m_ActorConfirmBox:getModel())
 
     if (self.m_View) then
         self:initView()
@@ -60,9 +40,9 @@ function ModelSceneMain:initView()
     local view = self.m_View
     assert(view, "ModelSceneMain:initView() no view is attached to the owner actor of the model.")
 
-    view:setViewConfirmBox(self.m_ActorConfirmBox:getView())
-        :setViewWarList(   self.m_ActorWarList:getView())
-        :setGameVersion(GameConstantFunctions.getGameVersion())
+	view:setViewConfirmBox(self.m_ActorConfirmBox:getView())
+	--view:setViewWarList(   self.m_ActorWarList:getView())
+		--:setGameVersion(GameConstantFunctions.getGameVersion())
 
     return self
 end

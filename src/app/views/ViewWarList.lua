@@ -76,7 +76,10 @@ end
 -- The constructor.
 --------------------------------------------------------------------------------
 function ViewWarList:ctor(param)
-    initWithBackground(self, createBackground())
+	local background = cc.Scale9Sprite:createWithSpriteFrameName("c03_t01_s01_f01.png", {x = 4, y = 6, width = 1, height = 1})
+	background:ignoreAnchorPointForPosition(true)
+
+	initWithBackground(self, background)
     initWithListView(self, createListView())
 
     self:setContentSize(250, display.height - 60)
