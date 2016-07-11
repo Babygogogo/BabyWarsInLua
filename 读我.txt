@@ -20,3 +20,6 @@ Win xp sp3及以上（需安装vc++ 2015运行库）
 本游戏已开源，欢迎关注：https://github.com/Babygogogo/BabyWars/
 
 本游戏已支持使用Tiled软件进行地图编辑。若您有兴趣参与地图编辑，欢迎联系作者。
+
+参与开发者NewCO:
+尚未完成的功能：菜单项的Join(部队结合),Launch(发射Silo，Plane从Carrier起飞),Supply(补给),Build(Carrier生产SeaPlane,Rig建造临时机场或临时港口),Flare(发射照明弹),Dive/Rise(潜艇上浮下潜)
