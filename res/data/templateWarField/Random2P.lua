@@ -1,6 +1,6 @@
 return {
     warFieldName = "随机2人图",
-    authorName   = "???",
+    authorName   = "???\n图库：\n所有2人地图",
     playersCount = 2,
 
     list = {

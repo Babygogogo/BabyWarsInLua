@@ -25,6 +25,7 @@ return {
     "XiaoGuoZhengBaSai",        -- 4p
 
     "Random2P",
+    "Random2P_HighQuality",
 
     "JiangQi",
     "QuanMianCeShi",
