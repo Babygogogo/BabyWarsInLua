@@ -4,9 +4,9 @@ return {
     playersCount = 2,
 
     list = {
-        "DuoYanPingYuan",
+        "DuoYanPingYuan_2",
         "ManShouXueXing",
-        "ShenSeYanCaoZhanZheng",
+        "ShenSeYanCaoZhanZheng_2",
         "WangPaiKongJun",
     },
 }
