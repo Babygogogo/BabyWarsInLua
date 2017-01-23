@@ -27,6 +27,7 @@ return {
     "BeiPan",                   -- 4p
     "DuiKangZhaoTianTong",      -- 4p
     "XiaoGuoZhengBaSai",        -- 4p
+    "XuanZe",
 
     "Random2P",
     "Random2P_HighQuality",
