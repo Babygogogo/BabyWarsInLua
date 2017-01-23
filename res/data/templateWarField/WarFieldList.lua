@@ -1,9 +1,11 @@
 return {
     "BaZhenTuEr",
+    "BaoFengYan",
     "BeiZhong",
     "BiFengGang",
     "DuoYanPingYuan_2",
     "FengBaoQianXian",
+    "FuWuTai",
     "GaoLaMiJia",
     "GanHeZhiJing",
     "GeBiTan",
@@ -15,9 +17,12 @@ return {
     "SiTongBaDa",
     "TanXinWan",
     "WangPaiKongJun",
-    "YanMo",
+    "WeiJiSiFu",
+    "YangFanYuanHang",
     "YunShiQun",
     "ZhengZhengFangFang",
+
+    "JuWaiRen",                 -- 3p
 
     "BeiPan",                   -- 4p
     "DuiKangZhaoTianTong",      -- 4p
