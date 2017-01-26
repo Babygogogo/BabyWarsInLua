@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" renderorder="right-down" width="23" height="19" tilewidth="24" tileheight="24" nextobjectid="1">
- <tileset firstgid="1" name="tileBase" tilewidth="24" tileheight="24" tilecount="100">
+ <tileset firstgid="1" name="tileBase" tilewidth="24" tileheight="24" tilecount="100" columns="0">
   <tile id="0">
    <image width="24" height="24" source="textures/tileBase/c01_t01_s01_f01.png"/>
   </tile>
@@ -302,7 +302,7 @@
    <image width="24" height="24" source="textures/tileBase/c01_t04_s36_f01.png"/>
   </tile>
  </tileset>
- <tileset firstgid="101" name="tileObject" tilewidth="24" tileheight="48" tilecount="109">
+ <tileset firstgid="101" name="tileObject" tilewidth="24" tileheight="48" tilecount="109" columns="0">
   <tile id="0">
    <image width="24" height="24" source="textures/tileObject/c01_t05_s01_f01.png"/>
   </tile>
@@ -631,7 +631,7 @@
    <image width="24" height="24" source="textures/tileObject/c01_t28_s16_f01.png"/>
   </tile>
  </tileset>
- <tileset firstgid="210" name="unit" tilewidth="24" tileheight="29" tilecount="104">
+ <tileset firstgid="210" name="unit" tilewidth="24" tileheight="29" tilecount="104" columns="0">
   <tile id="0">
    <image width="24" height="24" source="textures/units/c02_t01_s01_f01.png"/>
   </tile>
@@ -973,7 +973,7 @@
 123,0,124,0,0,0,0,124,102,0,154,0,149,0,0,0,123,0,154,0,112,123,123,
 0,0,154,112,123,0,0,0,102,123,105,101,101,154,101,101,104,0,123,169,0,0,0,
 124,123,0,0,154,0,0,0,154,0,0,0,123,0,0,123,154,0,124,0,124,112,171,
-184,0,0,0,0,0,0,123,0,0,124,124,0,0,0,0,0,0,0,0,0,0,0,
+174,0,0,0,0,0,0,123,0,0,124,124,0,0,0,0,0,0,0,0,0,0,0,
 0,103,101,112,0,0,0,113,123,0,0,0,0,149,0,0,123,123,154,0,0,154,0,
 123,102,0,0,171,0,0,113,0,0,154,0,124,0,0,0,123,0,0,0,123,102,123,
 0,102,0,0,0,0,0,0,0,0,0,0,0,0,0,154,0,124,123,0,0,102,124,
@@ -985,7 +985,7 @@
 124,102,0,0,123,124,0,154,0,0,0,0,0,0,0,0,0,0,0,0,0,102,0,
 123,102,123,0,0,0,123,0,0,0,124,0,154,0,0,113,0,0,170,0,0,102,123,
 0,154,0,0,154,123,123,0,0,149,0,0,0,0,123,113,0,0,0,112,101,106,0,
-0,0,0,0,0,0,0,0,0,0,0,124,124,0,0,123,0,0,0,0,0,0,184,
+0,0,0,0,0,0,0,0,0,0,0,124,124,0,0,123,0,0,0,0,0,0,174,
 170,112,124,0,124,0,154,123,0,0,123,0,0,0,154,0,0,0,154,0,0,123,124,
 0,0,0,169,123,0,105,101,101,154,101,101,104,123,102,0,0,0,123,112,154,0,0,
 123,123,112,0,154,0,123,0,0,0,149,0,154,0,102,124,0,0,0,0,124,0,123
