@@ -4,7 +4,7 @@ local ViewActionMenu = class("ViewActionMenu", cc.Node)
 local AnimationLoader       = require("src.app.utilities.AnimationLoader")
 local LocalizationFunctions = require("src.app.utilities.LocalizationFunctions")
 
-local MENU_BACKGROUND_WIDTH_FOR_ACTION_ITEM      = 150
+local MENU_BACKGROUND_WIDTH_FOR_ACTION_ITEM      = 90
 local MENU_BACKGROUND_HEIGHT_FOR_ACTION_ITEM     = display.height - 10 - 93 - 130 - 10 -- These are the height of boundary/MoneyEnergyInfo/UnitInfo/boundary.
 local MENU_BACKGROUND_WIDTH_FOR_PRODUCTION_ITEM  = 210
 local MENU_BACKGROUND_HEIGHT_FOR_PRODUCTION_ITEM = MENU_BACKGROUND_HEIGHT_FOR_ACTION_ITEM
@@ -22,11 +22,11 @@ local RIGHT_POS_Y_FOR_PRODUCTION_ITEM = RIGHT_POS_Y_FOR_ACTION_ITEM
 
 local LIST_VIEW_POS_X        = 0
 local LIST_VIEW_POS_Y        = 6
-local LIST_VIEW_ITEMS_MARGIN = 10
+local LIST_VIEW_ITEMS_MARGIN = 16
 
 local ITEM_FONT_NAME          = "res/fonts/msyhbd.ttc"
 local ITEM_FONT_SIZE_SMALL    = 16
-local ITEM_FONT_SIZE_LARGE    = 25
+local ITEM_FONT_SIZE_LARGE    = 20
 local ITEM_FONT_COLOR         = {r = 255, g = 255, b = 255}
 local ITEM_FONT_OUTLINE_COLOR = {r = 0,   g = 0,   b = 0}
 local ITEM_FONT_OUTLINE_WIDTH = 2
