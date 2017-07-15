@@ -42,6 +42,7 @@ return {
     "DuiKangZhaoTianTong",
     "HuiLangYu",
     "ShiJieDaZhan",
+    "YingXiongLei",
     "XiaoGuoZhengBaSai",
     "XuanZe_2",
 
