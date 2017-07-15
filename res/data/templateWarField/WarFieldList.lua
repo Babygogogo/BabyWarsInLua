@@ -42,9 +42,9 @@ return {
     "DuiKangZhaoTianTong",
     "HuiLangYu",
     "ShiJieDaZhan",
-    "YingXiongLei",
     "XiaoGuoZhengBaSai",
     "XuanZe_2",
+    "YingXiongLei",
 
     "Random2P",                 -- random maps
     "Random2P_HighQuality",
