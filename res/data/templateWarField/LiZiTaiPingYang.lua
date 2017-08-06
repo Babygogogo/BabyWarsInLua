@@ -1,6 +1,6 @@
 return {
-  warFieldName = "离 子 太 平 洋",
-  authorName   = "艾希·icey",
+  warFieldName = "(娱乐)离子太平洋",
+  authorName   = "wings of piano",
   playersCount = 4,
   
   width = 19,
