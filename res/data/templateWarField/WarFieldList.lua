@@ -4,6 +4,7 @@ return {
     "BaoFengYan_2",
     "BeiZhong",
     "BiFengGang",
+    "ChaZuoShanMai",
     "CuiMian",
     "DiBiao",
     "DuoYanPingYuan_2",
@@ -36,8 +37,9 @@ return {
     "ZhengZhengFangFang",
 
     "ZuJiZhaoTianTong_2",         -- Fun 2p maps
+    "LiZiTaiPingYang",
 
-    "JuWaiRen_2",               -- 3p
+    "JuWaiRen_2",                 -- 3p
 
     "BeiPan_2",                   -- 4p
     "DuiKangZhaoTianTong",
