@@ -37,7 +37,6 @@ return {
     "ZhengZhengFangFang",
 
     "ZuJiZhaoTianTong_2",         -- Fun 2p maps
-    "LiZiTaiPingYang",
 
     "JuWaiRen_2",                 -- 3p
 
@@ -49,9 +48,11 @@ return {
     "XuanZe_2",
     "YingXiongLei",
 
-    "Random2P",                 -- random maps
+    "LiZiTaiPingYang",           -- Fun 4p maps
+
+    "Random2P",                  -- random maps
     "Random2P_HighQuality",
 
-    "JiangQi",                  -- test maps
+    "JiangQi",                   -- test maps
     "QuanMianCeShi",
 }
