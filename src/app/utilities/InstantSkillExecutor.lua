@@ -226,6 +226,30 @@ s_Executors.execute63 = function(modelSceneWar, level)
     modelSceneWar:getScriptEventDispatcher():dispatchEvent({name = "EvtModelUnitMapUpdated"})
 end
 
+s_Executors.execute64 = function(modelSceneWar, level)
+    local modelPlayerManager = modelSceneWar:getModelPlayerManager()
+    local currentModelPlayer = modelPlayerManager:getmodelPlayer(modelSceneWar:getModelTurnManager():getPlayerIndex())
+    local teamIndex          = currentModelPlayer:getTeamIndex()
+    local fund               = currentModelPlayer:getFund()
+    local modifier           = getSkillModifier(64, level, true) * fund / 1000000
+
+    modelPlayerManager:forEachModelPlayer(function(modelPlayer, index)
+        if ((modelPlayer:isAlive()) and (modelPlayer:getTeamIndex() ~= teamIndex)) then
+            local _, req1, req2 = modelPlayer:getEnergy()
+            if (req2) then
+                local maxDamageCost = round(req2 * modelPlayer:getCurrentDamageCostPerEnergyRequirement())
+                modelPlayer:setDamageCost(math.max(
+                    0,
+                    math.min(
+                        round(modelPlayer:getDamageCost() + maxDamageCost * modifier),
+                        maxDamageCost
+                    )
+                ))
+            end
+        end
+    end)
+end
+
 --------------------------------------------------------------------------------
 -- The public functions.
 --------------------------------------------------------------------------------

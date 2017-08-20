@@ -166,7 +166,7 @@ SkillData.categories = {
     },
 
     ["SkillCategoryActiveEnergy"] = {
-        13,
+        64,
         61,
     },
 
@@ -479,7 +479,7 @@ SkillData.skills = {
         },
     },
 
-    -- Instant: Modify the energy of the opponent player.
+    -- Instant (deprecated): Modify the energy of the opponents and teammates.
     [13] = {
         minLevelActive     = 1,
         maxLevelActive     = 10,
@@ -1758,6 +1758,25 @@ SkillData.skills = {
             [10] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -500, pointsActive = 500, minEnergy = 10},
         },
     },
+
+    -- Instant: Modify the energy of the opponents.
+    [64] = {
+        minLevelActive     = 1,
+        maxLevelActive     = 10,
+        modifierUnit = "%",
+        levels       = {
+            [1] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -4, pointsActive = 50, minEnergy = 1},
+            [2] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -8, pointsActive = 100, minEnergy = 1},
+            [3] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -12, pointsActive = 150, minEnergy = 2},
+            [4] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -16, pointsActive = 200, minEnergy = 2},
+            [5] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -20, pointsActive = 250, minEnergy = 3},
+            [6] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -24, pointsActive = 300, minEnergy = 3},
+            [7] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -28, pointsActive = 350, minEnergy = 4},
+            [8] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -32, pointsActive = 400, minEnergy = 4},
+            [9] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -36, pointsActive = 450, minEnergy = 5},
+            [10] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -40, pointsActive = 500, minEnergy = 5},
+        },
+    },
 }
 
 SkillData.skillPresets = {
@@ -2313,7 +2332,7 @@ SkillData.skillPresets = {
             energyRequirement = 2,
             skills            = {
                 {
-                    id    = 13,
+                    id    = 64,
                     level = 5,
                 },
             },
