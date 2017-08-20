@@ -14,7 +14,6 @@ return {
     "FuWuTai_2",
     "GaoLaMiJia",
     "GanHeZhiJing",
-    "GeBiTan",
     "HaiAnTuJi",
     "HeiSenLin",
     "Ling",
@@ -24,7 +23,6 @@ return {
     "ShenSeYanCaoZhanZheng_2",
     "ShuiXingYaoSai",
     "SiPanDao_2",
-    "SiTongBaDa",
     "TanXinWan",
     "TianHe",
     "WangPaiKongJun",
@@ -47,8 +45,6 @@ return {
     "XiaoGuoZhengBaSai",
     "XuanZe_2",
     "YingXiongLei",
-
-    "LiZiTaiPingYang",           -- Fun 4p maps
 
     "Random2P",                  -- random maps
     "Random2P_HighQuality",
