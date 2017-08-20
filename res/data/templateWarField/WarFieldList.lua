@@ -4,6 +4,7 @@ return {
     "BaoFengYan_2",
     "BeiZhong",
     "BiFengGang",
+    "ChaZuoShanMai",
     "CuiMian",
     "DiBiao",
     "DuoYanPingYuan_2",
@@ -37,7 +38,7 @@ return {
 
     "ZuJiZhaoTianTong_2",         -- Fun 2p maps
 
-    "JuWaiRen_2",               -- 3p
+    "JuWaiRen_2",                 -- 3p
 
     "BeiPan_2",                   -- 4p
     "DuiKangZhaoTianTong",
@@ -47,9 +48,11 @@ return {
     "XuanZe_2",
     "YingXiongLei",
 
-    "Random2P",                 -- random maps
+    "LiZiTaiPingYang",           -- Fun 4p maps
+
+    "Random2P",                  -- random maps
     "Random2P_HighQuality",
 
-    "JiangQi",                  -- test maps
+    "JiangQi",                   -- test maps
     "QuanMianCeShi",
 }

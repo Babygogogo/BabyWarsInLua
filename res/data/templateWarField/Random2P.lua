@@ -10,6 +10,7 @@ return {
         "BeiZhong",
         "BiFengGang",
         "CuiMian",
+        "ChaZuoShanMai",
         "DiBiao",
         "DuoYanPingYuan_2",
         "FangBaoPingZhang",
