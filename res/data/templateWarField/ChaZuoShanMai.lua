@@ -1,8 +1,8 @@
 return {
   warFieldName = "插 座 山 脉",
-  authorName   = "Babygogogo/RushFTK",
+  authorName   = "RushFTK",
   playersCount = 2,
-  
+
   width = 12,
   height = 9,
 
