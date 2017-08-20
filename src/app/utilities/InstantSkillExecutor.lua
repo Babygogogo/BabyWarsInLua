@@ -192,6 +192,22 @@ s_Executors.execute61 = function(modelSceneWar, level)
     ))
 end
 
+s_Executors.execute62 = function(modelSceneWar, level)
+    local modifier     = getSkillModifier(5, level, true) * 10
+    local playerIndex  = modelSceneWar:getModelTurnManager():getPlayerIndex()
+    local teamIndex    = modelSceneWar:getModelPlayerManager():getModelPlayer(playerIndex):getTeamIndex();
+    local func         = function(modelUnit)
+        if (modelUnit:getTeamIndex() ~= teamIndex) then
+            modifyModelUnitHp(modelUnit, modifier)
+        end
+    end
+
+    modelSceneWar:getModelWarField():getModelUnitMap():forEachModelUnitOnMap(func)
+        :forEachModelUnitLoaded(func)
+
+    modelSceneWar:getScriptEventDispatcher():dispatchEvent({name = "EvtModelUnitMapUpdated"})
+end
+
 --------------------------------------------------------------------------------
 -- The public functions.
 --------------------------------------------------------------------------------

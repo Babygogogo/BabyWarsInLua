@@ -570,6 +570,7 @@ local s_Texts = {
             elseif (skillID == 59) then return "使我方所有建筑能够直接探明视野内的敌军隐蔽地点。"
             elseif (skillID == 60) then return "使我方所有部队和建筑能够直接探明视野内的敌军隐蔽地点。"
             elseif (skillID == 61) then return "我方当前能量值"
+            elseif (skillID == 62) then return "对方全体部队的当前HP"
             else                        return "未知4:" .. (skillID or "")
             end
         end,
@@ -640,6 +641,7 @@ local s_Texts = {
             elseif (skillID == 59) then return "建筑视野穿透"
             elseif (skillID == 60) then return "部队建筑视野穿透"
             elseif (skillID == 61) then return "我方能量值"
+            elseif (skillID == 62)  then return "对方全军HP"
             else                        return "未知5:" .. (skillID or "")
             end
         end,
