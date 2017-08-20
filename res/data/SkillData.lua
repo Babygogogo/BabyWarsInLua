@@ -184,7 +184,7 @@ SkillData.categories = {
     },
 
     ["SkillCategoryActiveLogistics"] = {
-        9,
+        63,
         16,
     },
 
@@ -398,7 +398,7 @@ SkillData.skills = {
         },
     },
 
-    -- Instant: Modify the fuel of the opponents' units.
+    -- Instant (deprecated): Modify the fuel of the opponents and teammates' units.
     [9] = {
         minLevelActive     = 1,
         maxLevelActive     = 10,
@@ -1739,6 +1739,25 @@ SkillData.skills = {
             [9] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -9, pointsActive = 2250, minEnergy = 27},
         },
     },
+
+    -- Instant: Modify the fuel of the opponents' units.
+    [63] = {
+        minLevelActive     = 1,
+        maxLevelActive     = 10,
+        modifierUnit = "%",
+        levels       = {
+            [1] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -50, pointsActive = 50, minEnergy = 1},
+            [2] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -100, pointsActive = 100, minEnergy = 2},
+            [3] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -150, pointsActive = 150, minEnergy = 3},
+            [4] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -200, pointsActive = 200, minEnergy = 4},
+            [5] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -250, pointsActive = 250, minEnergy = 5},
+            [6] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -300, pointsActive = 300, minEnergy = 6},
+            [7] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -350, pointsActive = 350, minEnergy = 7},
+            [8] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -400, pointsActive = 400, minEnergy = 8},
+            [9] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -450, pointsActive = 450, minEnergy = 9},
+            [10] = {modifierPassive = nil, pointsPassive = nil, modifierActive = -500, pointsActive = 500, minEnergy = 10},
+        },
+    },
 }
 
 SkillData.skillPresets = {
@@ -1870,7 +1889,7 @@ SkillData.skillPresets = {
                     level = 1,
                 },
                 {
-                    id    = 9,
+                    id    = 63,
                     level = 2,
                 },
             },
@@ -1883,7 +1902,7 @@ SkillData.skillPresets = {
                     level = 2,
                 },
                 {
-                    id    = 9,
+                    id    = 63,
                     level = 4,
                 },
             },

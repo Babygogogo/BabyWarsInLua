@@ -193,12 +193,30 @@ s_Executors.execute61 = function(modelSceneWar, level)
 end
 
 s_Executors.execute62 = function(modelSceneWar, level)
-    local modifier     = getSkillModifier(5, level, true) * 10
+    local modifier     = getSkillModifier(62, level, true) * 10
     local playerIndex  = modelSceneWar:getModelTurnManager():getPlayerIndex()
-    local teamIndex    = modelSceneWar:getModelPlayerManager():getModelPlayer(playerIndex):getTeamIndex();
+    local teamIndex    = modelSceneWar:getModelPlayerManager():getModelPlayer(playerIndex):getTeamIndex()
     local func         = function(modelUnit)
         if (modelUnit:getTeamIndex() ~= teamIndex) then
             modifyModelUnitHp(modelUnit, modifier)
+        end
+    end
+
+    modelSceneWar:getModelWarField():getModelUnitMap():forEachModelUnitOnMap(func)
+        :forEachModelUnitLoaded(func)
+
+    modelSceneWar:getScriptEventDispatcher():dispatchEvent({name = "EvtModelUnitMapUpdated"})
+end
+
+s_Executors.execute63 = function(modelSceneWar, level)
+    local playerIndex  = modelSceneWar:getModelTurnManager():getPlayerIndex()
+    local teamIndex    = modelSceneWar:getModelPlayerManager():getModelPlayer(playerIndex):getTeamIndex()
+    local baseModifier = getSkillModifier(63, level, true)
+    local modifier     = (baseModifier >= 0) and ((100 + baseModifier) / 100) or (100 / (100 - baseModifier))
+    local func         = function(modelUnit)
+        if (modelUnit:getTeamIndex() ~= teamIndex) then
+            modelUnit:setCurrentFuel(math.min(modelUnit:getMaxFuel(), round(modelUnit:getCurrentFuel() * modifier)))
+                :updateView()
         end
     end
 
